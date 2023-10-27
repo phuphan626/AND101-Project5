@@ -7,6 +7,9 @@ import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.codepath.asynchttpclient.AsyncHttpClient
 import com.codepath.asynchttpclient.callback.JsonHttpResponseHandler
@@ -14,55 +17,51 @@ import okhttp3.Headers
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var imageView: ImageView
-    private lateinit var titleTextView: TextView
-    private lateinit var explanationTextView: TextView
-    private lateinit var fetchDataButton: Button
-    private lateinit var dateUser:EditText
-    var photoURL = ""
-    var title = ""
-    var explanation = ""
+    private lateinit var planetList : MutableList<String>
+    private lateinit var rvPlanets : RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        imageView = findViewById(R.id.image_view)
-        titleTextView = findViewById(R.id.title_text_view)
-        explanationTextView = findViewById(R.id.explanation_text_view)
-        fetchDataButton = findViewById(R.id.fetch_data_button)
-        dateUser = findViewById(R.id.search_date)
+        rvPlanets = findViewById(R.id.planet_list)
+        planetList = mutableListOf()
 
-
-        fetchDataButton.setOnClickListener {
-            getPhotoAPI()
-        }
-        getPhotoURl(fetchDataButton,imageView)
 
     }
 
-    private fun getPhotoURl(button: Button, imageView: ImageView, vararg textView: TextView ){
-        button.setOnClickListener{
-            getPhotoAPI()
-            titleTextView.text = title
-            explanationTextView.text = explanation
-            Glide.with(this).load(photoURL).
-                    fitCenter().into(imageView)
-        }
-    }
+//    private fun getPhotoURl(button: Button, imageView: ImageView, vararg textView: TextView ){
+//        button.setOnClickListener{
+//            getPhotoAPI()
+//            titleTextView.text = title
+//            explanationTextView.text = explanation
+//            Glide.with(this).load(photoURL).
+//                    fitCenter().into(imageView)
+//        }
+//    }
     private fun getPhotoAPI(){
         val client = AsyncHttpClient()
         val api = "Please use the API key"
-        var userDate = dateUser.text
-        val nasaUrl = "https://api.nasa.gov/planetary/apod?api_key=$api&date=$userDate"
+        val nasaUrl = "https://api.nasa.gov/planetary/apod?api_key=$api&count=5"
+
         client[nasaUrl, object :
             JsonHttpResponseHandler() {
             override fun onSuccess(statusCode: Int, headers: Headers, json: JsonHttpResponseHandler.JSON) {
-                Log.d("Planetary", json.jsonObject.toString())
+                val planetImageArray = json.jsonObject.getJSONArray("message")
+                for (i in 0 until planetImageArray.length()){
+                    planetList.add(planetImageArray.getString(i))
+                }
 
-                photoURL = json.jsonObject.getString("url")
-                title = json.jsonObject.getString("copyright")
-                explanation = json.jsonObject.getString("explanation")
+                val adapter = PlanetAdapter(planetList)
+
+                rvPlanets.adapter = adapter
+
+                rvPlanets.layoutManager = LinearLayoutManager(this@MainActivity)
+
+                rvPlanets.addItemDecoration(DividerItemDecoration(this@MainActivity, LinearLayoutManager.VERTICAL))
+
+
+
             }
 
             override fun onFailure(
